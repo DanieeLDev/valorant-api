@@ -11,7 +11,6 @@
   "author": "DanieeL Dev",
   "license": "ISC",
   "dependencies": {
-    "cors": "^2.8.5",
     "express": "^4.17.3",
     "nodemon": "^2.0.15",
     "unofficial-valorant-api": "^1.0.4"
