@@ -24,8 +24,13 @@ app.get('/api/mmr/:region/:name/:tag', async (request, response) => {
     const mmr = await ValorantAPI.getMMR("v1", region, name, tag)
     if (mmr && mmr.status && mmr.status === 429) {
         response.json("< Indisponível no momento >")
-        return
+        return response.status(400)
     }
+    if (!mmr || !mmr.data || !mmr.data.currenttierpatched) {
+        response.json("< Os dados foram passados incorretamente. >")
+        return response.status(404)
+    }
+    console.log(mmr)
 
     var listRanks = {
         iron: 'Ferro',
