@@ -5,7 +5,7 @@ const app = express();
 app.use(express.json());
 
 
-app.listen(8888, () => {
+app.listen(process.env.PORT || 5000, () => {
     console.log('Servidor rodando =)')
 })
 
