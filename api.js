@@ -11,6 +11,11 @@ app.listen(3333, () => {
     console.log('Servidor rodando =)')
 })
 
+app.get('/', async (request, response) => {
+    response.json("Bem-vindo(a)! Para consultar o rank deste ato informe a url completa! -> https://danieeldev-valorantapi.herokuapp.com/api/mmr/{regiao}/{nome}/{tag} = Exemplo: https://danieeldev-valorantapi.herokuapp.com/api/mmr/br/coreano/br1")
+})
+
+
 app.get('/api/mmr/:region/:name/:tag', async (request, response) => {
     const region = request.params.region
     const name = request.params.name
