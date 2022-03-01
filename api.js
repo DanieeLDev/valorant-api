@@ -59,5 +59,8 @@ app.get('/api/mmr/:region/:name/:tag', async (request, response) => {
       retorno = `${rankRet} - ${crRet} CR`
     }
   }
+  if (rankRet === 'Sem rank/elo') {
+    retorno = 'Sem rank/elo'
+  }
   response.json(retorno)
 })
