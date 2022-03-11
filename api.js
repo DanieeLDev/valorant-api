@@ -1,9 +1,12 @@
-const version = '2203.11.0'
+const version = '2203.11.1'
+
 const ValorantAPI = require("unofficial-valorant-api")
+const cors = require('cors')
 const express = require('express');
 const app = express();
 
 app.use(express.json());
+app.use(cors());
 
 
 app.listen(process.env.PORT || 5000, () => {
@@ -28,6 +31,10 @@ app.get('/api/mmr/:region/:name/:tag', async (request, response) => {
   }
   const mmr = await ValorantAPI.getMMR("v2", region, name, tag)
   const current_data = mmr.data.current_data || null
+  if (mmr && mmr.status && mmr.status === 503) {
+    response.json("< HTTPS 503 -  Tente novamente em alguns minutos>")
+    return response.status(503)
+  }
   if (mmr && mmr.status && mmr.status === 429) {
     response.json("< API sobrecarregada, tente novamente em alguns minutos >")
     return response.status(429)
