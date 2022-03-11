@@ -1,3 +1,4 @@
+const version = '2203.11.0'
 const ValorantAPI = require("unofficial-valorant-api")
 const express = require('express');
 const app = express();
@@ -13,6 +14,10 @@ app.get('/', async (request, response) => {
   response.json("Bem-vindo(a)! Para consultar o rank deste ato informe a url completa! -> https://danieeldev-valorantapi.herokuapp.com/api/mmr/{regiao}/{nome}/{tag} = Exemplo: https://danieeldev-valorantapi.herokuapp.com/api/mmr/br/coreano/br1")
 })
 
+app.get('/api/version', (request, response) => {
+  response.json(`FREE Valorant-API powered by DanieelDev => API v${version}`)
+  return response.status(200)
+})
 
 app.get('/api/mmr/:region/:name/:tag', async (request, response) => {
   const region = request.params.region || "br1"
@@ -21,17 +26,22 @@ app.get('/api/mmr/:region/:name/:tag', async (request, response) => {
   if (!region || !name || !tag) {
     return response.status(400)
   }
-  const mmr = await ValorantAPI.getMMR("v1", region, name, tag)
+  const mmr = await ValorantAPI.getMMR("v2", region, name, tag)
+  const current_data = mmr.data.current_data || null
   if (mmr && mmr.status && mmr.status === 429) {
-    response.json("< Nenhum dado encontrado, tente novamente em alguns minutos >")
+    response.json("< API sobrecarregada, tente novamente em alguns minutos >")
     return response.status(429)
   }
-  if (!mmr || !mmr.data || !mmr.data.currenttierpatched) {
-    response.json("< Os dados foram passados incorretamente. >")
+  console.log(mmr)
+  if (!current_data) {
+    response.json(`< Nenhum dado encontrado. (${mmr.status})>`)
     return response.status(404)
   }
-  console.log(mmr)
+  if (!current_data.currenttierpatched) {
 
+    response.json(`< Sem dados desse ato. (${mmr.status})>`)
+    return response.status(404)
+  }
   var listRanks = {
     iron: 'Ferro',
     bronze: 'Bronze',
@@ -44,11 +54,11 @@ app.get('/api/mmr/:region/:name/:tag', async (request, response) => {
   }
 
   var retorno = ""
-  var rank = (mmr.data.currenttierpatched.split(' ')[0] || '').trim().toLowerCase()
-  var nivel = mmr.data.currenttierpatched.split(' ')[1] || ''
+  var rank = (current_data.currenttierpatched.split(' ')[0] || '').trim().toLowerCase()
+  var nivel = current_data.currenttierpatched.split(' ')[1] || ''
 
   var rankRet = listRanks[rank] || 'Sem rank/elo'
-  var crRet = mmr.data.ranking_in_tier || 0
+  var crRet = current_data.ranking_in_tier || 0
 
   if (rankRet === 'Radiante') {
     retorno = `${rankRet} - ${crRet} CR`
