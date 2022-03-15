@@ -1,4 +1,4 @@
-const version = '2.4'
+const version = '2.5'
 
 // ********************************************************************************************************
 // ********************************************************************************************************
@@ -154,9 +154,34 @@ var verificarContaDB = async (region, name, tag, done) => {
     if (done) done()
   }
 }
-var gravarContaDB = (rank, region, name, tag, done) => {
+var atualizarContaDB = (rank, region, name, tag, done) => {
   try {
-    fs.collection('accounts').doc(`${region}|${name}|${tag}`).set({ rank, usos: adminFB.firestore.FieldValue.increment(1) }, { merge: true }).then(() => {
+    var batch = fs.batch()
+    var refAccount = fs.collection('accounts').doc(`${region}|${name}|${tag}`)
+    batch.set(refAccount, { rank, uses: adminFB.firestore.FieldValue.increment(1) }, { merge: true })
+
+    var refApi = fs.collection('api').doc('info')
+    batch.set(refApi, { uses: adminFB.firestore.FieldValue.increment(1) }, { merge: true })
+
+    batch.commit().then(() => {
+      console.log('Atualizou banco de dados')
+      if (done) done()
+    })
+  } catch (error) {
+    console.log('Deu problema banco de dados')
+    if (done) done()
+  }
+}
+var atualizarUsoDB = (region, name, tag, done) => {
+  try {
+    var batch = fs.batch()
+    var refAccount = fs.collection('accounts').doc(`${region}|${name}|${tag}`)
+    batch.set(refAccount, { uses: adminFB.firestore.FieldValue.increment(1) }, { merge: true })
+
+    var refApi = fs.collection('api').doc('info')
+    batch.set(refApi, { uses: adminFB.firestore.FieldValue.increment(1) }, { merge: true })
+
+    batch.commit().then(() => {
       console.log('Atualizou banco de dados')
       if (done) done()
     })
@@ -174,7 +199,7 @@ var limparCacheAntigo = () => {
 }
 var atualizarCache = (id, rank) => {
   var oDate = new Date()
-  oDate.setMinutes(oDate.getMinutes() + 1) // esse cache é valido por 1min
+  oDate.setMinutes(oDate.getMinutes() + 10) // esse cache é valido por 10min
   cache[id] = {
     rank,
     ttl: oDate
@@ -240,6 +265,9 @@ app.get('/api/mmr/:region/:name/:tag', async (request, response) => {
     console.log('retornando do cache')
     response.status(200)
     response.json(cache[cacheId].rank)
+
+    await new Promise((resolve, reject) => { atualizarUsoDB(region, name, tag, () => { resolve() }) })
+
     return
   }
   const mmr = await ValorantAPI.getMMR("v2", region, name, tag)
@@ -264,6 +292,9 @@ app.get('/api/mmr/:region/:name/:tag', async (request, response) => {
     }
     atualizarCache(cacheId, rank);
     console.log('retornando valor do banco de dados')
+
+    await new Promise((resolve, reject) => { atualizarUsoDB(region, name, tag, () => { resolve() }) })
+
     return response.status(resStatus).json(resJson);
   }
 
@@ -271,7 +302,7 @@ app.get('/api/mmr/:region/:name/:tag', async (request, response) => {
   var crRet = current_data.ranking_in_tier || 0
 
   var rank = await organizarRank(type, crRet, (current_data.currenttierpatched || ''), region, name, tag);
-  await new Promise((resolve, reject) => { gravarContaDB(rank, region, name, tag, () => { resolve() }) })
+  await new Promise((resolve, reject) => { atualizarContaDB(rank, region, name, tag, () => { resolve() }) })
 
   // coloca no cache
   atualizarCache(cacheId, rank);
