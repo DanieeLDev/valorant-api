@@ -1,4 +1,4 @@
-const version = '2.3'
+const version = '2.4'
 
 // ********************************************************************************************************
 // ********************************************************************************************************
@@ -40,6 +40,9 @@ const fs = fbApp.firestore();
 // *****************************************                     ******************************************
 // ********************************************* **  **** ** **********************************************
 // ********************************************************************************************************
+
+var cache = {}
+
 var listRanks = {
   Iron: 'Ferro',
   Bronze: 'Bronze',
@@ -57,7 +60,7 @@ var temErro = (mmr, status) => {
     return "< Nenhum dado foi encontrado na RIOT >";
   }
   if (status === 503) {
-    return "< HTTPS 503 -  Tente novamente em alguns minutos>";
+    return "< HTTPS 503 - Tente novamente em alguns minutos>";
   }
   if (status === 404) {
     return "< Nenhum dado encontrado na RIOT >";
@@ -85,27 +88,27 @@ var getRankTraduction = (a) => {
 var organizarRank = (type, cr, fullRank, region, name, tag) => {
   return new Promise((resolve, reject) => {
     type = Number(type)
-    console.log('inicio ' + type)
+
     var a = fullRank.split(' ')[0].trim()
     var b = fullRank.split(' ')[1]
 
     if (type === 0) {
-      console.log('entrou type 0 ' + a)
+
       if (a === 'Radiant') {
-        resolve(`${getRankTraduction(a)}  - ${cr} CR`) // retorna "Radiante - 324 CR"
+        resolve(`${getRankTraduction(a)} - ${cr} CR`) // retorna "Radiante - 324 CR"
       } else {
         resolve(`${getRankTraduction(a)} ${b} - ${cr} CR`) //retorna "Ferro 3 - 23 CR"
       }
     }
     if (type === 1) {
-      console.log('entrou type 1 ' + a)
+
       resolve(getRankTraduction(a)); // retorna "Ferro" "Radiante"
     }
     if (type === 2) {
 
       if (a === 'Radiant') {
         ValorantAPI.getLeaderboard(region, name, tag).then((leader) => {
-          console.log(leader)
+
           if (leader.status === 404) {
             resolve(getRankTraduction(a)); // deu erro retorna so "Radiante"
           } else {
@@ -139,11 +142,9 @@ var verificarContaDB = async (region, name, tag, done) => {
 
   try {
     await fs.collection('accounts').doc(`${region}|${name}|${tag}`).get().then((doc) => {
-      console.log(`Regiao ${region} - ${name}#${tag} => ${doc.exists}`)
       var dados = null
       if (doc.exists) {
         dados = doc.data()
-        console.log(`${name}#${tag} => ${dados.rank}`)
 
         if (done) done(dados.rank)
 
@@ -163,6 +164,24 @@ var gravarContaDB = (rank, region, name, tag, done) => {
     console.log('Deu problema banco de dados')
     if (done) done()
   }
+}
+var limparCacheAntigo = () => {
+  Object.entries(cache).forEach(([key, conta]) => {
+    if (conta.ttl < new Date()) {
+      delete cache[key]
+    }
+  });
+}
+var atualizarCache = (id, rank) => {
+  var oDate = new Date()
+  oDate.setMinutes(oDate.getMinutes() + 1) // esse cache é valido por 1min
+  cache[id] = {
+    rank,
+    ttl: oDate
+  }
+  console.log('atualizando cache')
+
+  limparCacheAntigo(); // verifica se tem algum cache antigo e deleta
 }
 
 // ********************************************************************************************************
@@ -187,6 +206,15 @@ app.get('/api/version', (request, response) => {
   return response.status(200)
 })
 
+app.get('/api/cache', (request, response) => {
+  var res = "Acesso negado"
+  if (request.query.password && request.query.password === 'danieeldev') {
+    res = cache
+  }
+  response.json(res)
+  return response.status(200)
+})
+
 app.get('/api/mmr/:region/:name/:tag', async (request, response) => {
   const region = request.params.region || "br"
   const name = request.params.name
@@ -206,7 +234,14 @@ app.get('/api/mmr/:region/:name/:tag', async (request, response) => {
     response.json("Informe todos os campos corretamente.")
     return response.status(resStatus)
   }
-
+  // verificar se tem no cache, se tem ja retorna pra ser mais rapido
+  var cacheId = `${region}|${name}|${tag}`
+  if (cache[cacheId] && cache[cacheId].ttl > new Date()) {
+    console.log('retornando do cache')
+    response.status(200)
+    response.json(cache[cacheId].rank)
+    return
+  }
   const mmr = await ValorantAPI.getMMR("v2", region, name, tag)
 
   // mmr.status = 503 // TESTE REMOVER
@@ -219,7 +254,7 @@ app.get('/api/mmr/:region/:name/:tag', async (request, response) => {
     var rank = null
 
     await verificarContaDB(region, name, tag, (acc) => { rank = acc })
-    console.log('Tem rank: ' + rank)
+
     if (rank) {
       resJson = rank
       resStatus = 200
@@ -227,16 +262,20 @@ app.get('/api/mmr/:region/:name/:tag', async (request, response) => {
       resStatus = 404
       resJson = msgErro
     }
-
+    atualizarCache(cacheId, rank);
+    console.log('retornando valor do banco de dados')
     return response.status(resStatus).json(resJson);
   }
 
   const current_data = mmr.data.current_data
   var crRet = current_data.ranking_in_tier || 0
-  console.log('antes do rank')
+
   var rank = await organizarRank(type, crRet, (current_data.currenttierpatched || ''), region, name, tag);
-  console.log('depois do rank')
   await new Promise((resolve, reject) => { gravarContaDB(rank, region, name, tag, () => { resolve() }) })
+
+  // coloca no cache
+  atualizarCache(cacheId, rank);
+  console.log('retornando valor atualizado')
 
   resJson = rank
 
