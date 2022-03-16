@@ -1,5 +1,10 @@
 var package = require('./package.json') // pega o package
-require('dotenv').config() // pega as variaveis de ambiente
+
+if (process.env.NODE_ENV !== 'production') { // se n for heroku
+  require('dotenv').config() // pega os dados do .env
+}
+
+
 // ********************************************************************************************************
 // ********************************************************************************************************
 // ***********************************            ÍNICIO               ************************************
