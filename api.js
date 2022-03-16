@@ -1,5 +1,5 @@
-const version = '2.5'
-
+var package = require('./package.json') // pega o package
+require('dotenv').config() // pega as variaveis de ambiente
 // ********************************************************************************************************
 // ********************************************************************************************************
 // ***********************************            ÍNICIO               ************************************
@@ -10,7 +10,18 @@ const version = '2.5'
 //importando firebase
 const adminFB = require('firebase-admin')
 
-var serviceAccount = require("./ServiceAccountKey.json");
+var serviceAccount = {
+  type: "service_account",
+  project_id: "valorant-api",
+  private_key_id: process.env.CREDENTIALS_FIREBASE_PRIVATE_KEY_ID,
+  private_key: process.env.CREDENTIALS_FIREBASE_PRIVATE_KEY,
+  client_email: "valorant-api@appspot.gserviceaccount.com",
+  client_id: process.env.CREDENTIALS_FIREBASE_CLIENT_ID,
+  auth_uri: "https://accounts.google.com/o/oauth2/auth",
+  token_uri: "https://oauth2.googleapis.com/token",
+  auth_provider_x509_cert_url: "https://www.googleapis.com/oauth2/v1/certs",
+  client_x509_cert_url: "https://www.googleapis.com/robot/v1/metadata/x509/valorant-api%40appspot.gserviceaccount.com"
+}
 
 // importando valorant-api
 const ValorantAPI = require("unofficial-valorant-api")
@@ -227,7 +238,7 @@ app.get('/', async (request, response) => {
 })
 
 app.get('/api/version', (request, response) => {
-  response.json(`FREE Valorant-API powered by DanieelDev => API v${version}`)
+  response.json(`FREE Valorant-API powered by DanieelDev => API v${package.version}`)
   return response.status(200)
 })
 

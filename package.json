@@ -1,6 +1,6 @@
 {
   "name": "valorant-api",
-  "version": "1.0.0",
+  "version": "2.0.6",
   "description": "Valorant-API",
   "main": "api.js",
   "scripts": {
@@ -8,10 +8,11 @@
     "dev": "nodemon api.js",
     "start": "node api.js"
   },
-  "author": "DanieeL Dev",
+  "author": "DanieeL Dev, C4ldas",
   "license": "ISC",
   "dependencies": {
     "cors": "^2.8.5",
+    "dotenv": "^16.0.0",
     "express": "^4.17.3",
     "firebase": "^9.6.8",
     "firebase-admin": "^10.0.2",
