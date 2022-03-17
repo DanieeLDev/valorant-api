@@ -1,14 +1,14 @@
 {
   "name": "valorant-api",
-  "version": "2.1.4",
+  "version": "2.1.7",
   "description": "Valorant-API",
-  "main": "api.js",
+  "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon api.js",
-    "start": "node api.js"
+    "dev": "nodemon index.js",
+    "start": "node index.js"
   },
-  "author": "DanieeL Dev, C4ldas",
+  "author": "DanieeL Dev and C4ldas",
   "license": "ISC",
   "dependencies": {
     "cors": "^2.8.5",
@@ -17,6 +17,7 @@
     "firebase": "^9.6.8",
     "firebase-admin": "^10.0.2",
     "nodemon": "^2.0.15",
+    "replace-special-characters": "^1.2.5",
     "unofficial-valorant-api": "^1.0.4"
   }
 }
