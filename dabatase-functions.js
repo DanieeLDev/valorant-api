@@ -26,11 +26,13 @@ exports.updateUsesDb = (rank, region, name, tag) => {
   return new Promise((resolve, reject) => {
     try {
       var batch = fs.batch()
-      var refAccount = fs.collection('accounts').doc(`${region}|${name}|${tag}`)
-      batch.set(refAccount, { rank, uses: adminFB.firestore.FieldValue.increment(1) }, { merge: true })
+      let lastUseTimestamp = new Date()
+      let account = `${region}|${name}|${tag}`
+      var refAccount = fs.collection('accounts').doc(account)
+      batch.set(refAccount, { rank, uses: adminFB.firestore.FieldValue.increment(1), lastUseTimestamp }, { merge: true })
 
       var refApi = fs.collection('api').doc('info')
-      batch.set(refApi, { uses: adminFB.firestore.FieldValue.increment(1) }, { merge: true })
+      batch.set(refApi, { uses: adminFB.firestore.FieldValue.increment(1), lastUseTimestamp, lastUseAccount: account }, { merge: true })
 
       batch.commit().then(() => {
         console.log('Atualizou banco de dados')
@@ -58,4 +60,35 @@ exports.verifyAccountDb = (region, name, tag) => {
     }
   })
 
+}
+
+exports.updateLastPingedDB = (lastPinged) => {
+  return new Promise((resolve, reject) => {
+    try {
+      let batch = fs.batch()
+      let ref = fs.collection('api').doc('info')
+      batch.set(ref, { lastPinged }, { merge: true })
+      batch.commit().then(() => resolve() )
+    } catch (error) {
+      resolve(null)
+    }
+  })
+}
+
+exports.getMostUsedAccountDB = (lastPinged) => {
+  return new Promise((resolve, reject) => {
+    try {
+      fs.collection('accounts').orderBy('uses', 'desc').limit(1).get().then((docs) => {
+        let account = null
+        docs.forEach(acc => {
+          account = acc.data()
+          account.id = acc.id
+        })
+
+        resolve(account)
+      })
+    } catch (error) {
+      resolve(null)
+    }
+  })
 }

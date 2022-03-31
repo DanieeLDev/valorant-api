@@ -1,8 +1,8 @@
 //importando modulos para o api
 const cors = require('cors')
 const express = require('express');
-const { hasError, getCacheById, getFullVersion, updateCacheAccount, organizeRankText, adjustAccountName } = require("./general-functions.js");
-const { updateUsesDb, verifyAccountDb } = require("./dabatase-functions.js");
+const { updateLastPinged, hasError, getCacheById, getFullVersion, updateCacheAccount, organizeRankText, adjustAccountName, clearAllCache } = require("./general-functions.js");
+const { updateUsesDb, getMostUsedAccountDB, verifyAccountDb } = require("./dabatase-functions.js");
 const ValorantAPI = require("unofficial-valorant-api")
 
 // configurando variaveis iniciais
@@ -17,6 +17,8 @@ app.listen(process.env.PORT || 5000, () => {
 })
 
 app.get('/', async (request, response) => {
+    await updateLastPinged();
+
     response.send("Bem-vindo(a)! Para consultar o rank deste ato informe a url completa! -> https://danieeldev-valorantapi.herokuapp.com/api/mmr/{regiao}/{nome}/{tag} = Exemplo: https://danieeldev-valorantapi.herokuapp.com/api/mmr/br/LOUD Coreano/LLL")
 })
 
@@ -28,11 +30,25 @@ app.get('/api/version', (request, response) => {
 
 app.get('/api/cache', (request, response) => {
     var res = "Acesso negado"
-    if (request.query.password && request.query.password === 'danieeldev') {
+    const passwords = ['danieeldev', 'c4ldasdev']
+    if (request.query.password && passwords.includes(request.query.password)) {
+        if (request.query.clear) {
+            clearAllCache();
+        }
         res = getCacheById();
     }
     response.status(200)
     response.send(res)
+    return
+})
+app.get('/api/mostUsedAccount', async (request, response) => {    
+    res = await getMostUsedAccountDB();
+    let nick = res.id.split('|')[1]
+    let tag = res.id.split('|')[2]
+    let chamadas = res.uses
+
+    response.status(200)
+    response.send(`${nick}#${tag} com ${chamadas} chamadas.`)
     return
 })
 

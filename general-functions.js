@@ -1,5 +1,6 @@
 const ValorantAPI = require("unofficial-valorant-api");
 const replaceSpecialCharacters = require('replace-special-characters');
+const { updateLastPingedDB } = require("./dabatase-functions.js");
 var package = require('./package.json'); // pega o package
 
 var cache = {}
@@ -122,6 +123,9 @@ exports.clearOldCache = () => {
     }
   });
 }
+exports.clearAllCache = () => {
+  cache = {}
+}
 
 exports.updateCacheAccount = (account, rank) => {
   var oDate = new Date()
@@ -134,4 +138,8 @@ exports.updateCacheAccount = (account, rank) => {
   console.log('atualizando cache')
 
   this.clearOldCache(); // aproveita pra limpar caches antigos
+}
+
+exports.updateLastPinged = (lastPinged = new Date()) => {
+  return updateLastPingedDB(lastPinged)
 }
