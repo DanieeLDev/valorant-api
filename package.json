@@ -1,6 +1,6 @@
 {
   "name": "valorant-api",
-  "version": "2.2.1",
+  "version": "2.2.8",
   "description": "Valorant-API",
   "main": "index.js",
   "scripts": {

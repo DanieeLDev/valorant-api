@@ -17,9 +17,10 @@ app.listen(process.env.PORT || 5000, () => {
 })
 
 app.get('/', async (request, response) => {
-    await updateLastPinged();
+    var msg = "Bem-vindo(a)! Para inserir a API no seu chat da Twitch acesse -> https://valorant-api.web.app <- E veja o tutorial completo!"
+    response.status(200).send(msg);
 
-    response.send("Bem-vindo(a)! Para consultar o rank deste ato informe a url completa! -> https://danieeldev-valorantapi.herokuapp.com/api/mmr/{regiao}/{nome}/{tag} = Exemplo: https://danieeldev-valorantapi.herokuapp.com/api/mmr/br/LOUD Coreano/LLL")
+    await updateLastPinged();
 })
 
 app.get('/api/version', (request, response) => {
@@ -78,10 +79,10 @@ app.get('/api/mmr/:region/:name/:tag', async (request, response) => {
     if (cache && cache.ttl > new Date()) {
         console.log('retornando do cache')
 
-        await updateUsesDb(cache.rank, region, name, tag);
-
         response.status(200)
         response.send(cache.rank)
+
+        await updateUsesDb(cache.rank, region, name, tag);
         return
     }
     const mmr = await ValorantAPI.getMMR("v2", region, name, tag)
@@ -96,9 +97,6 @@ app.get('/api/mmr/:region/:name/:tag', async (request, response) => {
             returnText = rank
             statusCode = 200
 
-            updateCacheAccount(cacheId, rank);
-            await updateUsesDb(rank, region, name, tag);
-
         } else {
             statusCode = 404
             returnText = hasErrorMsg
@@ -108,6 +106,11 @@ app.get('/api/mmr/:region/:name/:tag', async (request, response) => {
 
         response.status(statusCode)
         response.send(returnText);
+
+        if (statusCode === 200) {
+          updateCacheAccount(cacheId, rank);
+          await updateUsesDb(rank, region, name, tag);
+        }
         return
     }
 
@@ -116,16 +119,15 @@ app.get('/api/mmr/:region/:name/:tag', async (request, response) => {
     var fullRank = (current_data.currenttierpatched || '')
 
     var rank = await organizeRankText(type, cr, fullRank, region, name, tag);
-
-    await updateUsesDb(rank, region, name, tag);
-
-    // coloca no cache
-    updateCacheAccount(cacheId, rank);
+    
     console.log('retornando valor atualizado')
 
     returnText = rank
 
     response.status(statusCode)
     response.send(returnText)
-    return response;
+
+    // coloca no cache
+    updateCacheAccount(cacheId, rank);
+    await updateUsesDb(rank, region, name, tag);
 })

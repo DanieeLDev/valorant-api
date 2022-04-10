@@ -68,7 +68,7 @@ exports.updateLastPingedDB = (lastPinged) => {
       let batch = fs.batch()
       let ref = fs.collection('api').doc('info')
       batch.set(ref, { lastPinged }, { merge: true })
-      batch.commit().then(() => resolve() )
+      batch.commit().then(() => {console.log('Pinged!'); resolve()} )
     } catch (error) {
       resolve(null)
     }
