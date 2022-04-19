@@ -103,7 +103,12 @@ exports.organizeRankText = (type, cr, fullRank, region, name, tag) => {
           if (leader.status === 404) {
             resolve(`${this.getRankTraduction(a)} - ${cr} CR`) //retorna "Ferro 3 - 23 CR"
           } else {
-            resolve(`${this.getRankTraduction(a)} #${leader.data.data[0].leaderboardRank} - ${cr} CR`) // retorna "Radiante #15 - 316 CR"
+            var nrLeader = Number(leader.data.data[0].leaderboardRank)
+            if (nrLeader > 500) {
+              resolve(`Imortal 3 #${nrLeader} - ${cr} CR`) // retorna "Radiante #15 - 316 CR"
+            } else {
+              resolve(`${this.getRankTraduction(a)} #${nrLeader} - ${cr} CR`) // retorna "Radiante #15 - 316 CR"
+            }
           }
         }).catch(() => { resolve(this.getRankTraduction(a)) })
       } else {

@@ -53,12 +53,68 @@ app.get('/api/mostUsedAccount', async (request, response) => {
     return
 })
 
+app.get('/api/getAllInfos/:name/:tag', async (request, response) => {  
+    var res = "Acesso negado"
+    const passwords = ['danieeldev', 'c4ldasdev']
+    if (!request.query.password || !passwords.includes(request.query.password)) {
+        response.send(res)
+      return
+    }  
+    const region = request.params.region || "br"
+    const name = adjustAccountName(request.params.name);
+    const tag = request.params.tag
+
+    var res = await ValorantAPI.getMatches(region, name, tag)
+    console.log('Voltou')
+
+    var info = { name, region, tag, matches: []}
+    res.data.forEach(fullmatch => {
+        var match = fullmatch.metadata
+        var objMatch = {
+            map: match.map,
+            rounds: match.rounds_played,
+            mode: match.mode
+        }
+
+
+        var playerx = fullmatch.players.all_players.filter(it => it.name.toLowerCase() === name)
+        var team = playerx[0].team
+        console.log(team)
+        team = team.toLowerCase();
+
+        var myTeam = []
+        var enemyTeam = []
+        fullmatch.players.all_players.forEach(player => {
+          var obj = {
+              name: player.name + '#' + player.tag,
+              character: player.character,
+              kda: player.stats.kills + '/' + player.stats.deaths + '/' + player.stats.assists
+          }
+
+          if (player.team.toLowerCase() === team) {
+              myTeam.push(obj)
+          } else {
+              enemyTeam.push(obj)
+          }
+          objMatch.myTeam = myTeam
+          objMatch.enemyTeam = enemyTeam
+        })
+        
+        info.matches.push(objMatch)
+    })
+
+    response.json(info)
+})
+
 app.get('/api/mmr/:region/:name/:tag', async (request, response) => {
     const region = request.params.region || "br"
     const name = adjustAccountName(request.params.name);
     const tag = request.params.tag
 
-    const type = request.query.type || 0
+    var type = request.query.type || 0
+    if (type < 0 || type > 3 || typeof type !== Number) {
+        type = 3
+    }
     // types
     // 0 -> "Ouro 1 - 34 CR"
     // 1 -> "Ouro 1"
