@@ -53,7 +53,7 @@ exports.hasError = (mmr, status) => {
     return `< Nenhum dado encontrado. (${status})>`;
   }
   if (!mmr.data.current_data.currenttierpatched) {
-    return `< Sem dados desse ato. (${status})>`;
+    return this.getRankTraduction('Unrated');
   }
 
   return null
@@ -65,54 +65,57 @@ exports.getRankTraduction = (a) => {
 
 exports.organizeRankText = (type, cr, fullRank, region, name, tag) => {
   return new Promise((resolve, reject) => {
+    // types
+    // 0 -> "Ouro 1 - 34 CR"
+    // 1 -> "Ouro 1"
+    // 2 -> "Radiante #12"
+    // 3 -> "Radiante #12 - 412 CR"
+
     type = Number(type || 0)
 
-    var a = fullRank.split(' ')[0].trim()
-    var b = fullRank.split(' ')[1]
+    var rank = fullRank.split(' ')[0].trim()
+    var tier = fullRank.split(' ')[1]
+
+
+    var stringRank = this.getRankTraduction(rank)
+
+    var stringRankTier = null
+    if (tier) {
+      stringRankTier = `${this.getRankTraduction(rank)} ${tier}`
+    }
+
 
     if (type === 0) {
-
-      if (a === 'Radiant') {
-        resolve(`${this.getRankTraduction(a)} - ${cr} CR`) // retorna "Radiante - 324 CR"
-      } else {
-        resolve(`${this.getRankTraduction(a)} ${b} - ${cr} CR`) //retorna "Ferro 3 - 23 CR"
-      }
+      resolve(`${stringRank} - ${cr} CR`) // ex: "Ferro 3 - 23 CR"
     }
+
     if (type === 1) {
-      resolve(this.getRankTraduction(a)); // retorna "Ferro" "Radiante"
+      resolve(stringRank); // ex: "Ferro 3"  ou "Radiante"
     }
-    if (type === 2) {
 
-      if (a === 'Radiant') {
+    if (type === 2 || type === 3) {
+
+      if (rank === 'Radiant') {
         ValorantAPI.getLeaderboard(region, name, tag).then((leader) => {
 
           if (leader.status === 404) {
-            resolve(this.getRankTraduction(a)); // deu erro retorna so "Radiante"
+            resolve(`${stringRank} - ${cr} CR`)
+            console.log('deu 404')
           } else {
-            resolve(`${this.getRankTraduction(a)} #${leader.data.data[0].leaderboardRank}`) // retorna "Radiante #15"
-          }
-        }).catch(() => { resolve(this.getRankTraduction(a)) })
-      } else {
-        resolve(this.getRankTraduction(a)); // retorna so "Imortal"
-      }
-
-    }
-    if (type === 3) {
-      if (a === 'Radiant') {
-        ValorantAPI.getLeaderboard(region, name, tag).then((leader) => {
-          if (leader.status === 404) {
-            resolve(`${this.getRankTraduction(a)} - ${cr} CR`) //retorna "Ferro 3 - 23 CR"
-          } else {
-            var nrLeader = Number(leader.data.data[0].leaderboardRank)
-            if (nrLeader > 500) {
-              resolve(`Imortal 3 #${nrLeader} - ${cr} CR`) // retorna "Radiante #15 - 316 CR"
-            } else {
-              resolve(`${this.getRankTraduction(a)} #${nrLeader} - ${cr} CR`) // retorna "Radiante #15 - 316 CR"
+            console.log('deu certo')
+            var base = `${stringRank} #${leader.data.data[0].leaderboardRank}`
+            var ret = base
+            if (type === 3) {
+              ret = `${base} - ${cr} CR`
             }
+            resolve(ret) // retorna "Radiante #15"
           }
-        }).catch(() => { resolve(this.getRankTraduction(a)) })
+        }).catch(() => {
+          console.log('deu catch')
+          resolve(`${stringRank} - ${cr} CR`) // ex: "Diamante 2 - 73 CR"
+        })
       } else {
-        resolve(`${this.getRankTraduction(a)} ${b} - ${cr} CR`) //retorna "Ferro 3 - 23 CR"
+        resolve(`${stringRank} - ${cr} CR`) // ex: "Diamante 2 - 73 CR"
       }
 
     }

@@ -31,7 +31,7 @@ app.get('/api/version', (request, response) => {
 
 app.get('/api/cache', (request, response) => {
     var res = "Acesso negado"
-    const passwords = ['danieeldev', 'c4ldasdev']
+    const passwords = process.env.PASSWORDS_CACHE.split(';')
     if (request.query.password && passwords.includes(request.query.password)) {
         if (request.query.clear) {
             clearAllCache();
@@ -42,7 +42,7 @@ app.get('/api/cache', (request, response) => {
     response.send(res)
     return
 })
-app.get('/api/mostUsedAccount', async (request, response) => {    
+app.get('/api/mostUsedAccount', async (request, response) => {
     res = await getMostUsedAccountDB();
     let nick = res.id.split('|')[1]
     let tag = res.id.split('|')[2]
@@ -53,13 +53,13 @@ app.get('/api/mostUsedAccount', async (request, response) => {
     return
 })
 
-app.get('/api/getAllInfos/:name/:tag', async (request, response) => {  
+app.get('/api/getJSONMatches/:name/:tag', async (request, response) => {
     var res = "Acesso negado"
-    const passwords = ['danieeldev', 'c4ldasdev']
+    const passwords = process.env.PASSWORDS_CACHE.split(';')
     if (!request.query.password || !passwords.includes(request.query.password)) {
         response.send(res)
-      return
-    }  
+        return
+    }
     const region = request.params.region || "br"
     const name = adjustAccountName(request.params.name);
     const tag = request.params.tag
@@ -67,7 +67,7 @@ app.get('/api/getAllInfos/:name/:tag', async (request, response) => {
     var res = await ValorantAPI.getMatches(region, name, tag)
     console.log('Voltou')
 
-    var info = { name, region, tag, matches: []}
+    var info = { name, region, tag, matches: [] }
     res.data.forEach(fullmatch => {
         var match = fullmatch.metadata
         var objMatch = {
@@ -85,21 +85,21 @@ app.get('/api/getAllInfos/:name/:tag', async (request, response) => {
         var myTeam = []
         var enemyTeam = []
         fullmatch.players.all_players.forEach(player => {
-          var obj = {
-              name: player.name + '#' + player.tag,
-              character: player.character,
-              kda: player.stats.kills + '/' + player.stats.deaths + '/' + player.stats.assists
-          }
+            var obj = {
+                name: player.name + '#' + player.tag,
+                character: player.character,
+                kda: player.stats.kills + '/' + player.stats.deaths + '/' + player.stats.assists
+            }
 
-          if (player.team.toLowerCase() === team) {
-              myTeam.push(obj)
-          } else {
-              enemyTeam.push(obj)
-          }
-          objMatch.myTeam = myTeam
-          objMatch.enemyTeam = enemyTeam
+            if (player.team.toLowerCase() === team) {
+                myTeam.push(obj)
+            } else {
+                enemyTeam.push(obj)
+            }
+            objMatch.myTeam = myTeam
+            objMatch.enemyTeam = enemyTeam
         })
-        
+
         info.matches.push(objMatch)
     })
 
@@ -110,6 +110,8 @@ app.get('/api/mmr/:region/:name/:tag', async (request, response) => {
     const region = request.params.region || "br"
     const name = adjustAccountName(request.params.name);
     const tag = request.params.tag
+    const noCache = request.query.noCache || false
+    console.log('noCache -> ' + noCache)
 
     var type = request.query.type || 0
     if (type < 0 || type > 3 || typeof type !== Number) {
@@ -132,7 +134,7 @@ app.get('/api/mmr/:region/:name/:tag', async (request, response) => {
     // verificar se tem no cache, se tem ja retorna pra ser mais rapido
     var cacheId = `${region}|${name}|${tag}`
     var cache = getCacheById(cacheId);
-    if (cache && cache.ttl > new Date()) {
+    if (!noCache && cache && cache.ttl > new Date()) {
         console.log('retornando do cache')
 
         response.status(200)
@@ -164,8 +166,8 @@ app.get('/api/mmr/:region/:name/:tag', async (request, response) => {
         response.send(returnText);
 
         if (statusCode === 200) {
-          updateCacheAccount(cacheId, rank);
-          await updateUsesDb(rank, region, name, tag);
+            updateCacheAccount(cacheId, rank);
+            await updateUsesDb(rank, region, name, tag);
         }
         return
     }
@@ -175,7 +177,7 @@ app.get('/api/mmr/:region/:name/:tag', async (request, response) => {
     var fullRank = (current_data.currenttierpatched || '')
 
     var rank = await organizeRankText(type, cr, fullRank, region, name, tag);
-    
+
     console.log('retornando valor atualizado')
 
     returnText = rank
